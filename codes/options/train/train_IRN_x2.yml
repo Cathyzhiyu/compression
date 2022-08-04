@@ -1,0 +1,112 @@
+
+#### general settings
+name: Preprocess_Syntax_x2_2k_DIV2K_qp6
+use_tb_logger: true
+model: IRN
+distortion: sr
+scale: 2
+gpu_ids: [0]
+scalea: 1
+scaleb: 2
+
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K
+    mode: GT
+    dataroot_GT: /home/admin123/Dataset/DIV2K/DIV2K_train_HR # path to training HR images
+    dataroot_LQ: /home/admin123/Dataset/DIV2K/DIV2K_train_LR_bicubic/X2 # path to training reference LR images, not necessary, if not provided, LR images will be generated in dataloader
+    #meta_info_file: /home/jianghao/Code/zhiyu/PreProcess/codes/data/meta_info/meta_info_4kvideos_train.txt
+    #num_frame: 1
+    n_workers: 8  # per GPU
+    batch_size: 1 # 16
+    color: RGB
+    #crop_border: 28 # mod 32 = 0, rgb->yuv %2, downsampling %2, attention/virtual codec INN %8, sum: %32
+    #interval: 1
+    scale: 2
+    use_shuffle: true
+    GT_size: 512 # patch size
+    use_flip: true
+    use_rot: true
+    data_type: img
+
+  val:
+    name: val_DIV2K
+    mode: GT
+    dataroot_GT: /home/admin123/Dataset/DIV2K/DIV2K_valid_HR # path to validation HR images
+    dataroot_LQ: /home/admin123/Dataset/DIV2K/DIV2K_valid_LR_bicubic/X2 # path to validation reference LR images, not necessary, if not provided, LR images will be generated in dataloader
+    scale: 2
+    #meta_info_file: /home/jianghao/Code/zhiyu/PreProcess/codes/data/meta_info/meta_info_4kvideos_test.txt
+    #num_frame: 1
+    #crop_border: 28
+    #interval: 1
+
+
+#### network structures
+
+network_G:
+  which_model_G: EDSR
+  in_nc: 3
+  out_nc: 3
+  scale: 2
+  init: xavier
+
+
+network_A:
+  which_model_A: EDSR
+
+
+network_syntax:
+  which_model_syntax: Neural_Syntax
+
+
+#### path
+
+path:
+  pretrain_model_G: ~ #/home/jianghao/Code/zhiyu/PreProcess/experiments/model/241000_G.pth
+  pretrain_model_A: /home/admin123/Documents/compression/compress/pretrained/241000_A.pth
+  pretrain_model_C: ~
+  pretrain_model_S: ~
+  resume_state: ~
+
+
+#### training settings: learning rate scheme, loss
+train:
+  lr_G: !!float 1e-4
+  lr_A: !!float 1e-4
+  lr_S: !!float 1e-4
+  beta1: 0.9
+  beta2: 0.999
+  niter: 300000
+  warmup_iter: -1  # no warm up
+
+  lr_scheme: MultiStepLR
+  lr_steps: [50000, 100000, 150000, 200000]
+  lr_gamma: 0.5
+  # lr_scheme: CosineAnnealingLR_Restart
+  # T_period: [250000, 250000]
+  # restarts: [250000]
+  # restart_weights : [1]
+  # eta_min: !!float 5e-6
+
+  pixel_criterion_forw: l2
+  pixel_criterion_back: l1
+
+  manual_seed: 10
+
+  val_freq: !!float 500
+
+  lambda_fit_forw: 1
+  lambda_rec_back: 1
+  # lambda_ce_forw: 1
+  weight_decay_G: !!float 0
+  gradient_clipping: 50
+  # gaussian_scale: 1
+
+
+#### logger
+
+logger:
+  print_freq: 10
+  save_checkpoint_freq: !!float 500
